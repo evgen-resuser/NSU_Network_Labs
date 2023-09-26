@@ -1,0 +1,4 @@
+com\evgen\clonesfinder\App.class
+com\evgen\clonesfinder\multicast\MulticastCore.class
+com\evgen\clonesfinder\parser\AppArguments.class
+com\evgen\clonesfinder\parser\ConsoleOptionsParser.class
