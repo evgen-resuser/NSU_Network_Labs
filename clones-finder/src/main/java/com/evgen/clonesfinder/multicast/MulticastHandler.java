@@ -7,7 +7,7 @@ import java.util.*;
 
 public class MulticastHandler implements Runnable{
 
-    private static final int TIME = 4000;
+    private static final int TIME = 3500;
 
     private final Set<ClientData> clients = new HashSet<>();
     private final HashMap<ClientData, Long> timestamps = new HashMap<>();
@@ -36,13 +36,13 @@ public class MulticastHandler implements Runnable{
     void addClient(ClientData client){
 
         clients.add(client);
-        timestamps.put(client, System.currentTimeMillis() + TIME);
+        timestamps.put(client, System.currentTimeMillis());
         //printClients();
     }
 
     @Override
     public void run() {
-        while (true){
+        while (Thread.currentThread().isAlive()){
             checkClients();
             try {
                 Thread.sleep(TIME);

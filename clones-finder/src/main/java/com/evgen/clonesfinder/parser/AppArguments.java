@@ -8,7 +8,7 @@ public class AppArguments extends OptionsBase {
             name = "help",
             abbrev = 'h',
             help = "Show help",
-            defaultValue = "true"
+            defaultValue = "false"
     )
     public boolean help;
 
@@ -29,4 +29,13 @@ public class AppArguments extends OptionsBase {
             defaultValue = "224.0.0.0"
     )
     public String address;
+
+    @Option(
+            name = "mode",
+            abbrev = 'm',
+            help = "Send - s / Receive - r",
+            category = "startup",
+            defaultValue = "s"
+    )
+    public String mode;
 }

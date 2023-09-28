@@ -27,7 +27,7 @@ public class MulticastReceiver implements Runnable{
 
             socket.joinGroup(addr);
 
-            while (true){
+            while (Thread.currentThread().isAlive()){
                 DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
                 socket.receive(packet);
 

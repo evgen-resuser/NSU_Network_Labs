@@ -7,6 +7,7 @@ import com.google.devtools.common.options.OptionsParser;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Collections;
 
 public class App
 {
@@ -17,13 +18,21 @@ public class App
 
         ConsoleOptionsParser options = new ConsoleOptionsParser(parser.getOptions(AppArguments.class));
 
-        int port = options.getPort();
-        if (port <= 0){
-            System.out.println("Wrong port! Type \"-h\" for help");
+        boolean help = options.getHelp();
+        if (help){
+            System.out.println("Help");
+            System.out.println(parser.describeOptions(Collections.<String, String>emptyMap(),
+                    OptionsParser.HelpVerbosity.LONG));
             return;
         }
 
-        InetAddress addr = null;
+        int port = options.getPort();
+        if (port <= 0){
+            System.out.println("Wrong port! Rerun with \"-h\" for help");
+            return;
+        }
+
+        InetAddress addr;
         try {
             addr = options.getAddress();
         } catch (UnknownHostException e){
@@ -35,6 +44,12 @@ public class App
             return;
         }
 
-        new MulticastCore(port, addr).startWork();
+        char mode = (options.getMode()).charAt(0);
+        if (mode != 's' && mode != 'r'){
+            System.out.println("Wrong mode! Rerun with \"-h\" for help");
+            return;
+        }
+
+        new MulticastCore(port, addr, mode).startWork();
     }
 }

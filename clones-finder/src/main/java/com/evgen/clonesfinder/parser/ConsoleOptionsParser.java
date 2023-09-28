@@ -17,4 +17,12 @@ public class ConsoleOptionsParser {
     public InetAddress getAddress() throws UnknownHostException {
         return InetAddress.getByName(opts.address);
     }
+
+    public String getMode(){
+        return opts.mode;
+    }
+
+    public boolean getHelp(){
+        return opts.help;
+    }
 }

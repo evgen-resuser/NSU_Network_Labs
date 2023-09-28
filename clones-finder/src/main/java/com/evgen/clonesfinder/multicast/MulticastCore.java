@@ -7,25 +7,42 @@ public class MulticastCore {
 
     int port;
     InetAddress addr;
-    public MulticastCore(int port, InetAddress addr){
+    char mode;
+
+    public MulticastCore(int port, InetAddress addr, char mode){
         this.port = port;
         this.addr = addr;
+        this.mode = mode;
     }
 
     public void startWork(){
-        MulticastSender senderMC = new MulticastSender(port, addr);
-        MulticastHandler handlerMC = new MulticastHandler();
-        MulticastReceiver receiverMc = new MulticastReceiver(handlerMC, addr, port);
 
-        System.out.println("Listening...");
+        switch (mode){
+            case 's':{
+                System.out.println("Enabled Sending mode...");
 
-        Thread sender = new Thread(senderMC);
-        Thread handler = new Thread(handlerMC);
-        Thread receiver = new Thread(receiverMc);
+                MulticastSender senderMC = new MulticastSender(port, addr);
+                Thread sender = new Thread(senderMC);
+                sender.start();
 
-        sender.start();
-        handler.start();
-        receiver.start();
+                break;
+            }
+            case 'r':{
+                System.out.println("Enabled Receiving mode...");
+
+                MulticastHandler handlerMC = new MulticastHandler();
+                MulticastReceiver receiverMc = new MulticastReceiver(handlerMC, addr, port);
+
+                Thread handler = new Thread(handlerMC);
+                Thread receiver = new Thread(receiverMc);
+
+                handler.start();
+                receiver.start();
+
+                break;
+            }
+        }
+
     }
 
 }

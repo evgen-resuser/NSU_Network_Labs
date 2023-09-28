@@ -31,7 +31,7 @@ public class MulticastSender implements Runnable{
                     DatagramPacket packet = new DatagramPacket(bytes, bytes.length, addr, port);
                     socket.send(packet);
 
-                    //System.out.println("Sent: "+msg);
+                    System.out.println("Sent: "+msg);
 
                     Thread.sleep(3000);
                 } catch (IOException | InterruptedException e) {
