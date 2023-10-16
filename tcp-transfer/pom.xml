@@ -6,7 +6,7 @@
 
     <groupId>com.evgen</groupId>
     <artifactId>tcp-transfer</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
 
     <properties>
         <maven.compiler.source>18</maven.compiler.source>
@@ -42,7 +42,7 @@
                             <manifest>
                                 <addClasspath>true</addClasspath>
                                 <classpathPrefix>lib/</classpathPrefix>
-                                <mainClass>com.evgen.clonesfinder.App</mainClass>
+                                <mainClass>com.evgen.tcp_transfer.Main</mainClass>
                             </manifest>
                         </archive>
                     </configuration>
@@ -57,7 +57,7 @@
                         </descriptorRefs>
                         <archive>
                             <manifest>
-                                <mainClass>com.evgen.clonesfinder.App</mainClass>
+                                <mainClass>com.evgen.tcp_transfer.Main</mainClass>
                             </manifest>
                         </archive>
                     </configuration>
@@ -71,8 +71,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>10</source>
-                    <target>10</target>
+                    <source>11</source>
+                    <target>11</target>
                 </configuration>
             </plugin>
         </plugins>
