@@ -33,7 +33,7 @@ public class ServerMain {
                 clientThreadPool.execute(new ServerJob(socket));
             }
 
-        } catch (SocketException e){
+        } catch (RuntimeException e){
             System.out.println("Connection reset!");
         } catch (Exception e ){
             System.out.println(e.getMessage());

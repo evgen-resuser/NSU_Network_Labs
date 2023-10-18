@@ -34,7 +34,7 @@ public class ConsoleArguments extends OptionsBase {
             name = "file path",
             abbrev = 'F',
             help = "Path to the file, that will be sent",
-            defaultValue = "",
+            defaultValue = "null",
             category = "client"
     )
     public String filePath;

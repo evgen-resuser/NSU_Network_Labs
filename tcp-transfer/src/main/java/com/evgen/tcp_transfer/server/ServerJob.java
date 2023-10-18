@@ -14,7 +14,7 @@ public class ServerJob implements Runnable{
 
     private static final int BUFFER_SIZE = 4*1024;
 
-    boolean isFinished = false;
+    SessionInfo info;
 
     public ServerJob(Socket socket) {
         this.socket = socket;
@@ -22,6 +22,7 @@ public class ServerJob implements Runnable{
 
     @Override
     public void run() {
+        info = new SessionInfo();
         try {
             in = new DataInputStream(socket.getInputStream());
             out = new DataOutputStream(socket.getOutputStream());
@@ -32,53 +33,66 @@ public class ServerJob implements Runnable{
             out.close();
 
         } catch (Exception e) {
-            isFinished = true;
+            info.isFinished = true;
             throw new RuntimeException(e);
         }
     }
 
-    String fileName;
-    long bytess = 0;
+    void startReceiving() throws IOException {
+        Thread speed = null;
+        try {
+            long size = in.readLong();
+            try {
+                info.fileName = in.readUTF();
+            } catch (UTFDataFormatException e) {
+                System.out.println("Wrong file name encoding!");
+            }
+            System.out.println("File to receive: " + info.fileName + ", size: " + size + " bytes\n");
 
-    void startReceiving() throws IOException, InterruptedException {
+            out.writeInt(SUCCESS);
 
-        long size = in.readLong();
-        fileName = in.readUTF();
-        System.out.println("File to receive: "+fileName+", size: "+size+" bytes\n");
+            info.timeStart = System.currentTimeMillis();
+            speed = new Thread(new TransferSpeed(info));
+            speed.start();
 
-        out.writeInt(SUCCESS);
+            int bytes;
+            File file = createFile("./uploads/" + info.fileName);
+            FileOutputStream fileOutputStream = new FileOutputStream(file);
 
-        Thread speed = new Thread(new TransferSpeed(this));
-        speed.start();
-
-        int bytes = 0;
-        File file = createFile();
-        FileOutputStream fileOutputStream = new FileOutputStream(file);
-
-        byte[] buffer = new byte[BUFFER_SIZE];
+            byte[] buffer = new byte[BUFFER_SIZE];
             while (size > 0 && (bytes = in.read(buffer, 0, (int) Math.min(buffer.length, size))) != -1) {
+                info.bytesReceived += bytes;
                 fileOutputStream.write(buffer, 0, bytes);
-                size -= bytes; // read upto file size
-                bytess += bytes;
+                size -= bytes;
             }
 
-        isFinished = true;
-        if (size != 0) {
-            System.out.printf("File \"%s\" corrupted! Please, try again.%n", fileName);
-            out.writeInt(FAILURE);
-        } else System.out.printf("File \"%s\" Received%n", fileName);
+            info.isFinished = true;
+            Thread.sleep(500);
 
-        out.writeInt(SUCCESS);
-        fileOutputStream.close();
-        speed.join();
+            if (size != 0) {
+                System.out.printf("File \"%s\" corrupted! Please, try again.%n", info.fileName);
+                out.writeInt(FAILURE);
+            } else System.out.printf("File \"%s\" received, avg. speed:  %.3f MB/sec.%n",
+                    info.fileName, info.avgSpeed);
+
+            out.writeInt(SUCCESS);
+            fileOutputStream.close();
+            speed.join();
+        } catch (Exception e){
+            out.writeInt(FAILURE);
+            info.isFinished = true;
+            assert speed != null;
+            speed.interrupt();
+            this.socket.close();
+        }
     }
 
-    private File createFile(){
+    private File createFile(String name){
         int n = 0;
-        File file = new File("./uploads/"+fileName);
+        File file = new File(name);
         if (file.exists()){
             while (true) {
-                boolean res = file.renameTo(new File("./uploads/" + "(" + n + ")" + fileName));
+                boolean res = file.renameTo(new File("./uploads/" + "(" + n + ")" + info.fileName));
                 if (res) break;
                 ++n;
             }
