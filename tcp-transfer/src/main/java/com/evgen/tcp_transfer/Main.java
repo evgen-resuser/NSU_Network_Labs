@@ -36,6 +36,12 @@ public class Main {
             System.exit(-1);
         }
 
+        int thrNum = options.getThreadsNum();
+        if (thrNum <= 0){
+            System.out.println("Bad number of threads!");
+            System.exit(-1);
+        }
+
         int port = options.getPort();
         if (port <= 0){
             System.out.println("Wrong port! Rerun with \"-h\" for help");
@@ -56,7 +62,7 @@ public class Main {
              new ClientMain(options.getPath(), addr, port).start();
 
         } else {
-            new ServerMain(port).start();
+            new ServerMain(port, thrNum).start();
         }
 
     }

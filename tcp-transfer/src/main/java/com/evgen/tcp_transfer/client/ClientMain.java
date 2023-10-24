@@ -41,6 +41,15 @@ public class ClientMain {
         long size = file.length();
         String name = file.getName();
 
+        if (name.length() > 4096 ){//size tb
+            System.out.println("Too long name!");
+            System.exit(-1);
+        }
+        if (size / 1024 / 1024 / 1024 / 1024 >= 1) {
+            System.out.println("The file is too big! Max size: 1 TB");
+            System.exit(-1);
+        }
+
         out.writeLong(size);
         out.writeUTF(name);
 
@@ -54,7 +63,7 @@ public class ClientMain {
         FileInputStream fileInputStream = new FileInputStream(file);
 
         int bytes = 0;
-        byte[] buffer = new byte[4 * 1024];
+        byte[] buffer = new byte[4 * 1024]; //magic const
         while ((bytes = fileInputStream.read(buffer)) != -1) {
             out.write(buffer, 0, bytes);
             out.flush();

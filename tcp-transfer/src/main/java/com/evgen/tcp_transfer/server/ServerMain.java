@@ -3,18 +3,17 @@ package com.evgen.tcp_transfer.server;
 import java.io.File;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ServerMain {
 
-    private static final int THREADS_COUNT = 10;
+    private final int port;
+    private final int threadsNum;
 
-    private int port;
-
-    public ServerMain(int port) {
+    public ServerMain(int port, int threadsNum) {
         this.port = port;
+        this.threadsNum = threadsNum;
 
         new File("./uploads").mkdirs();
     }
@@ -23,9 +22,9 @@ public class ServerMain {
 
         try (ServerSocket serverSocket = new ServerSocket(port)){
 
-            System.out.println("Server started!");
+            System.out.println("Server started!\nAvailable threads: "+threadsNum);
 
-            ExecutorService clientThreadPool = Executors.newFixedThreadPool(THREADS_COUNT);
+            ExecutorService clientThreadPool = Executors.newFixedThreadPool(threadsNum);
 
             while (true) {
                 Socket socket = serverSocket.accept();

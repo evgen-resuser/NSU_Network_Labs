@@ -42,6 +42,7 @@ public class ServerJob implements Runnable{
         Thread speed = null;
         try {
             long size = in.readLong();
+            info.fileSize = size;
             try {
                 info.fileName = in.readUTF();
             } catch (UTFDataFormatException e) {
@@ -92,7 +93,7 @@ public class ServerJob implements Runnable{
         File file = new File(name);
         if (file.exists()){
             while (true) {
-                boolean res = file.renameTo(new File("./uploads/" + "(" + n + ")" + info.fileName));
+                boolean res = file.renameTo(new File("./uploads/" + "(" + n + ")" + info.fileName)); //move
                 if (res) break;
                 ++n;
             }

@@ -34,4 +34,8 @@ public class ConsoleOptionsParser {
         return opts.filePath;
     }
 
+    public int getThreadsNum(){
+        return opts.threadsNum;
+    }
+
 }

@@ -56,4 +56,13 @@ public class ConsoleArguments extends OptionsBase {
             category = "client/server"
     )
     public int port;
+
+    @Option(
+            name = "max threads",
+            abbrev = 't',
+            help = "Set max threads for threadpool(positive, non-zero value)",
+            defaultValue = "10",
+            category = "server"
+    )
+    public int threadsNum;
 }
