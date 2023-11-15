@@ -47,7 +47,7 @@ public class Weather {
     @Override
     public String toString() {
         return String.format("<div style=\"font-family: Arial;\"><b>%s</b><br>Температура: %sС<br>Ощущается как %sС<br>" +
-                        "Мин/Макс: %sC/%sС<br>Давление: %s кПа<br>Влажность: %s%%<br>Скорость ветра: %s м/с</div>",
+                        "Мин/Макс: %sC/%sС<br>Давление: %s мм.рт.ст<br>Влажность: %s%%<br>Скорость ветра: %s м/с</div>",
                 description, temp, feelsLike, tempMin, tempMax, pressure, humidity, windSpeed);
     }
 }

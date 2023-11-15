@@ -5,6 +5,7 @@ import com.evgen.places_search.graphhopper.GraphhopperPlaces;
 import com.evgen.places_search.interesting.InfoFinder;
 import com.evgen.places_search.interesting.IntPlace;
 import com.evgen.places_search.interesting.InterestingPlacesSearch;
+import com.evgen.places_search.maps.MapFinder;
 import com.evgen.places_search.weather.Weather;
 import com.evgen.places_search.weather.WeatherSearch;
 
@@ -13,18 +14,24 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class MainPanel extends JPanel {
 
     private JComboBox<Object> resultsComboBox = new JComboBox<>();
-    private Place currentPlace;
-    private Place[] places;
+    private transient Place currentPlace;
+    private transient Place[] places;
     private JTextPane textPane;
     private JTextPane weatherPane;
-    private final InfoFinder infoFinder = new InfoFinder();
     private JList<IntPlace> interestingPlaces;
+
+    private final transient InfoFinder infoFinder = new InfoFinder();
+    private final transient MapFinder mapFinder = new MapFinder();
+
+    private final ImageIcon noMap = new ImageIcon(ClassLoader.getSystemResource("no_map.png"));
+    private final ImageIcon loadingMap = new ImageIcon(ClassLoader.getSystemResource("loading_map.png"));
 
 
     public MainPanel(){
@@ -34,7 +41,10 @@ public class MainPanel extends JPanel {
         this.add(new JSeparator(SwingConstants.HORIZONTAL));
         this.add(initInfoPanel());
         this.add(new JSeparator(SwingConstants.HORIZONTAL));
+
         this.add(initDetailsPanel());
+        this.add(new JSeparator(SwingConstants.HORIZONTAL));
+        this.add(initMapPanel());
     }
 
     private JPanel initSearchPanel(){
@@ -144,8 +154,8 @@ public class MainPanel extends JPanel {
             currentPlace = (Place)resultsComboBox.getSelectedItem();
             if (currentPlace != null) {
                 prepareWeather();
-                //wPanel.prepareWeather(currentPlace);
                 findIntPlaces();
+                redrawMap();
             }
         });
 
@@ -259,6 +269,38 @@ public class MainPanel extends JPanel {
             textPane.setText("<html><div style=\"font-family: Arial;\">"+result+"</div></html>");
             return null;
         } );
+    }
 
+    JLabel map = new JLabel(noMap);
+
+    private JPanel initMapPanel(){
+        JPanel panel = new JPanel();
+
+        panel.add(new JLabel("Карта:"));
+        panel.add(map);
+        return panel;
+    }
+
+    private void redrawMap(){
+        if (currentPlace == null) return;
+
+        mapFinder.setCoords(currentPlace.parseCoordinates());
+        map.setIcon(loadingMap);
+
+
+        CompletableFuture<BufferedImage> future = CompletableFuture.supplyAsync( ()->{
+            mapFinder.run();
+            return mapFinder.getMap();
+        } );
+
+        future.thenApply( result -> {
+            if (result == null){
+                System.out.println("map error");
+                map.setIcon(noMap);
+                return null;
+            }
+            map.setIcon(new ImageIcon(result));
+            return null;
+        } );
     }
 }

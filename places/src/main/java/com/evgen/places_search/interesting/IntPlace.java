@@ -9,9 +9,6 @@ public class IntPlace {
         this.name = name;
     }
 
-    public IntPlace() {
-    }
-
     public String getName() {
         return name;
     }

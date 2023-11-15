@@ -22,7 +22,6 @@ public class GraphhopperPlaces implements Runnable {
     String toSearch;
     List<Place> results;
 
-
     public void doSearch(String place){
         OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder()

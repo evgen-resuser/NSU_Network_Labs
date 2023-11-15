@@ -2,8 +2,6 @@ package com.evgen.places_search.graphhopper;
 
 import com.google.gson.JsonObject;
 
-import java.util.Arrays;
-
 public class Place {
 
     private String name;

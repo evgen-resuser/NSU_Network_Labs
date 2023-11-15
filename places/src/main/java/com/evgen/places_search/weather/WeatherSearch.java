@@ -12,6 +12,8 @@ public class WeatherSearch implements Runnable{
     String[] coords;
     Weather result;
 
+    private static final double PA_MM = 0.75;
+
     public void setCoords(String[] coords) {
         this.coords = coords;
     }
@@ -39,7 +41,9 @@ public class WeatherSearch implements Runnable{
         result.setTempMin(String.valueOf(obj1.get("temp_min")));
         result.setFeelsLike(String.valueOf(obj1.get("feels_like")));
         result.setHumidity(String.valueOf(obj1.get("humidity")));
-        result.setPressure(String.valueOf(obj1.get("pressure")));
+
+        String pressurePa = String.valueOf(obj1.get("pressure"));
+        result.setPressure(String.valueOf((Double.parseDouble(pressurePa)*PA_MM)));
 
         obj1 = obj.getAsJsonObject("wind");
         result.setWindSpeed(String.valueOf(obj1.get("speed")));
