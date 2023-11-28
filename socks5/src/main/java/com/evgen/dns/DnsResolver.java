@@ -1,5 +1,6 @@
 package com.evgen.dns;
 
+import com.evgen.CacheEntry;
 import org.xbill.DNS.*;
 import org.xbill.DNS.Record;
 
@@ -19,15 +20,26 @@ public class DnsResolver {
 
     private int senderID;
     private final HashMap<Integer, Map.Entry<Integer, SelectionKey>> clientsMatch = new HashMap<>();
-    public final HashMap<Integer, byte[]> senderIDMap = new HashMap<>();
+    private final HashMap<Integer, CacheEntry> cache;
+    private final HashMap<Integer, byte[]> tmp;
 
-    public HashMap<Integer, Map.Entry<Integer, SelectionKey>> getClientsMatch() {
+    public final HashMap<Integer, Map.Entry<Integer, SelectionKey>> getClientsMatch() {
         return clientsMatch;
+    }
+
+    public HashMap<Integer, CacheEntry> getCache() {
+        return cache;
+    }
+
+    public HashMap<Integer, byte[]> getTmp() {
+        return tmp;
     }
 
     public DnsResolver(DatagramChannel channel){
         this.channel = channel;
         this.senderID = 0;
+        this.cache = new HashMap<>();
+        this.tmp = new HashMap<>();
     }
 
     public void resolve(byte[] address, int port, SelectionKey key){
@@ -44,8 +56,8 @@ public class DnsResolver {
             header.setFlag(Flags.AD); //The AD (authentic data) bit indicates in a response that the data included has been verified by the server providing it.
             header.setFlag(Flags.RD); //Если он флаг устанавливается в запросе — это значит, что клиент просит сервер не сообщать ему промежуточных ответов, а вернуть только IP-адрес.
 
-            senderIDMap.put(senderID, address);
             clientsMatch.put(senderID, new AbstractMap.SimpleEntry<>(port, key));
+            tmp.put(senderID, address);
             senderID++;
 
             channel.write(ByteBuffer.wrap(msg.toWire()));

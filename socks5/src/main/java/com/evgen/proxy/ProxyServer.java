@@ -1,5 +1,6 @@
 package com.evgen.proxy;
 
+import com.evgen.CacheEntry;
 import com.evgen.dns.DnsResolver;
 import org.xbill.DNS.*;
 import org.xbill.DNS.Record;
@@ -8,9 +9,7 @@ import java.io.IOException;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
 public class ProxyServer implements AutoCloseable{
@@ -22,8 +21,6 @@ public class ProxyServer implements AutoCloseable{
     private final DnsResolver resolver;
     private final ServerSocketChannel serverChannel;
     private final int port;
-
-    private final HashMap<String, InetAddress > dnsCache = new HashMap<>();
 
     public ProxyServer(int port) throws IOException{
         this.port = port;
@@ -44,23 +41,24 @@ public class ProxyServer implements AutoCloseable{
         this.resolver = new DnsResolver(dnsChannel);
     }
 
-    public void run() throws IllegalArgumentException {
+    public void run() {
         try {
-            System.out.println("Start at port: "+port);
-            while (Thread.currentThread().isAlive()) {
 
-                int readyChannels = selector.select();            // появится кто-то
+            while (!Thread.currentThread().isInterrupted()) {
+
+                int readyChannels = selector.select();
 
                 if (readyChannels >= 0) {
-                    for (SelectionKey key : selector.selectedKeys()) keyWork(key);
+                    for (SelectionKey key : selector.selectedKeys()) {
+                        keyWork(key);
+                    }
                     selector.selectedKeys().clear();
                 }
             }
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-            e.printStackTrace(System.err);
+        } catch (IllegalArgumentException | IOException ioExc) {
+            System.out.println(ioExc.getMessage());
+            ioExc.printStackTrace(System.err);
         }
-
     }
 
     private void keyWork(SelectionKey key) throws IOException {
@@ -69,12 +67,17 @@ public class ProxyServer implements AutoCloseable{
             if (key.isAcceptable()) acceptClient();
             else if (key.isConnectable()) connect(key);
             else if (key.isReadable()) {
-                if (key.channel() instanceof DatagramChannel) { readDnsAnswer(key);
-                } else { readData(key);}
-            } else if (key.isWritable()) { writeData(key); }
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
+                if (key.channel() instanceof DatagramChannel) readDnsAnswer(key);
+                else readData(key);
+            } else if (key.isWritable()) writeData(key);
+
+        } catch (IOException ioExc) {
             closeConnection(key);
+        } catch (IllegalArgumentException iaExc) {
+            System.out.println(iaExc.getMessage());
+            closeConnection(key);
+        }catch (RuntimeException re){
+            System.out.println(re.getMessage());
         }
     }
 
@@ -144,13 +147,17 @@ public class ProxyServer implements AutoCloseable{
                 .orElseThrow(() -> new RuntimeException("No dns resolve"))
                 .getAddress();
 
-        String addr = ipAddress.getHostName();
-        System.out.println("put: "+addr);
-        dnsCache.put(addr, ipAddress);
+        byte[] address = ipAddress.getAddress();
+        int port1 = resolver.getClientsMatch().get(senderId).getKey();
+        SelectionKey curKey = resolver.getClientsMatch().get(senderId).getValue();
 
-        connectToSite(ipAddress.getAddress(),
-                resolver.getClientsMatch().get(senderId).getKey(),
-                resolver.getClientsMatch().get(senderId).getValue());
+        byte[] str = resolver.getTmp().get(senderId);
+        if (str != null) {
+            resolver.getCache().put(Arrays.hashCode(str), new CacheEntry(port1, address));
+            System.out.println("new in cache: "+new String(str) + " " + ipAddress + ":" + port1);
+        }
+
+        connectToSite(address, port1, curKey);
     }
 
     private void connectToSite(byte[] addr, int port, SelectionKey key) throws IOException,IllegalArgumentException{
@@ -260,8 +267,8 @@ public class ProxyServer implements AutoCloseable{
 //    n байт 	Номера методов аутентификации, переменная длина, 1 байт для каждого поддерживаемого метода
 
     private boolean checkAuthMethod(byte[] header){
-        int NMethods = header[1];
-        for (int i = 0; i < NMethods; i++) {
+        int n = header[1];
+        for (int i = 0; i < n; i++) {
             if (header[i + 2] == SocksCodes.NO_AUTH_REQUIRED) {
                 return true;
             }
@@ -310,17 +317,23 @@ public class ProxyServer implements AutoCloseable{
                 connectToSite(addr, port1, key);
             }
             case SocksCodes.DOMAIN_NAME -> {
-
-
                 int domainLength = header[4] & 0xFF;
                 addr = Arrays.copyOfRange(header, 5, 5 + domainLength);
-                String addrS = new String(addr, StandardCharsets.UTF_8);
-                if (dnsCache.containsKey(addrS)) {
-                    addr = dnsCache.get(addrS).getAddress();
-                    //System.out.println("i have!!!! " + addrS);
-                    connectToSite(addr, port1, key);
-                    return;
+
+                int hash = Arrays.hashCode(addr);
+                if (!resolver.getCache().containsKey(hash)) {
+                    System.out.println("found new addr:" + new String(addr));
+                } else {
+                    CacheEntry e = resolver.getCache().get(hash);
+                    if (e != null){
+                        byte[] add = e.addr;
+                        int portTmp = e.port;
+                        //System.out.println("in cash: "+ new String(add) + " " + port1);
+                        connectToSite(add, portTmp, key);
+                        return;
+                    }
                 }
+
                 resolver.resolve(addr, port1, key);
             }
             case SocksCodes.IPV6 -> {
@@ -348,23 +361,22 @@ public class ProxyServer implements AutoCloseable{
 
         int bytesWrite = channel.write(attachment.getOutputBuffer());
 
-        if (bytesWrite != -1) {
-            attachment.getOutputBuffer().flip();
-            attachment.getOutputBuffer().clear();
-            attachment.getDstKey().interestOps(attachment.getDstKey().interestOps() | SelectionKey.OP_READ);
-            key.interestOps(SelectionKey.OP_READ);
+        if (bytesWrite == -1) {
+            throw new IllegalArgumentException("Bytes write = -1");
         }
+        attachment.getOutputBuffer().flip();
+        attachment.getOutputBuffer().clear();
+        attachment.getDstKey().interestOps(attachment.getDstKey().interestOps() | SelectionKey.OP_READ);
+        key.interestOps(SelectionKey.OP_READ);
     }
 
     private void closeConnection (SelectionKey key) throws IOException{
         if (key == null) throw new IOException("closeConnection: null key!");
 
-        if (key.attachment() != null) {
-            SelectionKey dstKey = ((KeyAttachment) key.attachment()).getDstKey();
-            if (dstKey != null) {
-                dstKey.channel().close();
-                dstKey.cancel();
-            }
+        SelectionKey dstKey = ((KeyAttachment) key.attachment()).getDstKey();
+        if (dstKey != null) {
+            dstKey.channel().close();
+            dstKey.cancel();
         }
         key.cancel();
         key.channel().close();
