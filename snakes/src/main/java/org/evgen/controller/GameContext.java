@@ -119,7 +119,7 @@ public class GameContext {
         playersMap.clear();
 
         for (SnakesProto.GamePlayer player : state.getPlayers().getPlayersList()) {
-            if (player.getRole() == SnakesProto.NodeRole.MASTER) continue;
+            //if (player.getRole() == SnakesProto.NodeRole.MASTER) continue;
 
             PlayerInfo info = new PlayerInfo(player.getName(), player.getId(), player.getIpAddress(), player.getPort(),
                     (player.getRole() == SnakesProto.NodeRole.DEPUTY ? SnakesProto.NodeRole.MASTER : SnakesProto.NodeRole.NORMAL),
@@ -129,6 +129,10 @@ public class GameContext {
         }
 
         System.out.println("the player list: " + playersMap);
+    }
+
+    public void changeRole(int id, SnakesProto.NodeRole role) {
+        playersMap.get(id).setRole(role);
     }
 
 }

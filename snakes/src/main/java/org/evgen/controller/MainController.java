@@ -34,6 +34,7 @@ public class MainController implements Controller, StateApplicator {
 
     private InetAddress masterAddress;
     private int masterPort;
+    private int masterId;
 
     private final HashSet<GameInfo> games = new HashSet<>();
 
@@ -54,13 +55,37 @@ public class MainController implements Controller, StateApplicator {
     ////////////////////// BASE METHODS //////////////////////
 
     public void stopGame() {
-        if (currentRole == SnakesProto.NodeRole.MASTER) {
-            networkMain.stopAnnounce();
+//        if (currentRole == SnakesProto.NodeRole.MASTER) {
+//            networkMain.stopAnnounce();
+//        }
+//        currentRole = SnakesProto.NodeRole.VIEWER;
+//        //todo delegate master work
+//        gameCore.stopCore();
+//        isGameOn = false;
+        if (currentRole != SnakesProto.NodeRole.MASTER) {
+            currentRole = SnakesProto.NodeRole.VIEWER;
+            networkMain.sendMessage(messageBuilder.buildRoleChange(
+                    SnakesProto.NodeRole.VIEWER, id, SnakesProto.NodeRole.MASTER, masterId
+            ), masterAddress, masterPort);
+            return;
         }
-        currentRole = SnakesProto.NodeRole.VIEWER;
-        //todo delegate master work
+        networkMain.stopAnnounce();
+
+        PlayerInfo dep = context.findRole(SnakesProto.NodeRole.DEPUTY);
+        System.out.println("found dep:" + dep);
+        if (dep != null) {
+            System.out.println("tell about it to deputy!");
+            networkMain.sendMessage(
+                    messageBuilder.buildRoleChange(SnakesProto.NodeRole.VIEWER, id, SnakesProto.NodeRole.MASTER, dep.getId()),
+                    dep.getInetAddress(), dep.getPort()
+            );
+        }
+
         gameCore.stopCore();
+        //msgChecker.interrupt();
+
         isGameOn = false;
+
     }
 
     @Override
@@ -118,13 +143,14 @@ public class MainController implements Controller, StateApplicator {
                     System.out.printf("ACK! r: %d, s: %d%n", message.getReceiverId(), message.getSenderId());
                     id = message.getReceiverId();
                     System.out.println("id now: " + id);
+                    masterId = message.getSenderId();
                 }
                 case STATE -> {
                     board.applyState(message.getState().getState());
                     lastStateMessage = message;
                 }
                 case PING -> networkMain.sendMessage(
-                        SnakesProto.GameMessage.newBuilder().setPing(
+                        SnakesProto.GameMessage.newBuilder().setMsgSeq(System.currentTimeMillis()).setPing(
                                 SnakesProto.GameMessage.PingMsg.newBuilder().build()
                         ).build(), packet.getAddress(), packet.getPort()
                 );
@@ -136,18 +162,57 @@ public class MainController implements Controller, StateApplicator {
                     );
                 }
                 case ROLE_CHANGE -> {
-                    System.out.println(message.getRoleChange().getSenderRole() + " decided to make us "+message.getRoleChange().getReceiverRole());
-                    currentRole = message.getRoleChange().getReceiverRole();
-                    if (message.getRoleChange().getSenderRole() == SnakesProto.NodeRole.MASTER) {
-                        masterAddress = packet.getAddress();
-                        masterPort = packet.getPort();
-                    }
+//                    System.out.println(message.getRoleChange().getSenderRole() + " decided to make us "+message.getRoleChange().getReceiverRole());
+//                    currentRole = message.getRoleChange().getReceiverRole();
+//                    if (message.getRoleChange().getSenderRole() == SnakesProto.NodeRole.MASTER) {
+//                        masterAddress = packet.getAddress();
+//                        masterPort = packet.getPort();
+//                    }
+                    roleProceed(message, packet.getAddress(), packet.getPort());
+
+                    networkMain.sendMessage(
+                            messageBuilder.buildAck(id, message.getSenderId(), message.getMsgSeq()), packet.getAddress(), packet.getPort()
+                    );
                 }
                 case DISCOVER -> networkMain.sendMessage(messageBuilder.buildAnnounce(), packet.getAddress(), packet.getPort());
                 case TYPE_NOT_SET -> System.out.println("Message type was not set!");
             }
         } catch (Exception e) {
             System.out.println(e.getMessage());
+        }
+    }
+
+    private void roleProceed(SnakesProto.GameMessage message, InetAddress a, int port) {
+        SnakesProto.GameMessage.RoleChangeMsg m = message.getRoleChange();
+        switch (m.getSenderRole()) {
+            case NORMAL -> {/*do nothing*/}
+            case MASTER -> {
+                masterAddress = a;
+                masterPort = port;
+                masterId = message.getSenderId();
+                if (m.getSenderRole() == SnakesProto.NodeRole.VIEWER) {
+                    System.out.println("you ded");
+                    context.changeRole(message.getReceiverId(), SnakesProto.NodeRole.VIEWER);
+                }
+                if (m.getReceiverRole() == SnakesProto.NodeRole.DEPUTY) {
+                    currentRole = SnakesProto.NodeRole.DEPUTY;
+                    System.out.println("now im deputy!!!");
+                }
+            }
+            case DEPUTY -> {/*do nothing1*/}
+            case VIEWER -> {
+                if (m.getReceiverRole() == SnakesProto.NodeRole.DEPUTY) {
+                    currentRole = SnakesProto.NodeRole.DEPUTY;
+                    System.out.println("now im deputy!!!");
+                } else if (m.getReceiverRole() == SnakesProto.NodeRole.MASTER) {
+                    if (currentRole != SnakesProto.NodeRole.MASTER) {
+                        System.out.println("im gonna be master!!!");
+                        becomeMaster();
+                    }
+                }
+                context.changeRole(message.getSenderId(), SnakesProto.NodeRole.VIEWER);
+                System.out.println("!!!!!!!!!!" + context.getPlayersMap().get(message.getSenderId()).getRole());
+            }
         }
     }
 
@@ -181,11 +246,15 @@ public class MainController implements Controller, StateApplicator {
 
         //context.addMaster(m);
         gameCore = new GameCore(context, this);
+
+        //context.addNewPlayer(m);
+        gameCore.addPlayer(m);
+        gameCore.startCore();
+
         SnakesProto.GameMessage ann = messageBuilder.buildAnnounce();
         lastAnnMsgId = ann.getMsgSeq();
         networkMain.startAnnounce(ann);
-        gameCore.addPlayer(m);
-        gameCore.startCore();
+
 
         board = new BoardFrame(ann.getAnnouncement().getGames(0).getConfig(), adapter);
     }
@@ -248,30 +317,28 @@ public class MainController implements Controller, StateApplicator {
 
         int stateOrder = state.getStateOrder();
 
-        System.out.println("got last state");
 
         context.getFromGameState(state);
 
-        System.out.println("copied context: "+context);
 
         gameCore = new GameCore(context, this);
 
-        System.out.println("game core create");
 
         SnakesProto.GameMessage ann = messageBuilder.buildAnnounce();
 
         lastAnnMsgId = ann.getMsgSeq();
         networkMain.startAnnounce(ann);
-        System.out.println("started to announce");
 
         gameCore.getListsFromState(state);
-        System.out.println("finished to copy lists to core");
 
         gameCore.setStateCounter(stateOrder);
-        System.out.println("set state counter");
 
         gameCore.startCore();
-        System.out.println("started core");
+
+        PlayerInfo lastMaster = context.getPlayersMap().get(masterId);
+        lastMaster.setIp(masterAddress.toString());
+        lastMaster.setPort(masterPort);
+        context.addNewPlayer(lastMaster);
 
         for (PlayerInfo player : context.getPlayersMap().values()) {
             if (player.getRole() == SnakesProto.NodeRole.VIEWER) continue;
