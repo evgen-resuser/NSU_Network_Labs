@@ -2,7 +2,7 @@
 // source: src/main/java/org/example/protocol/snakes.proto
 
 // Protobuf Java Version: 3.25.1
-package me.ippolitov.fit.snakes;
+package  me.ippolitov.fit.snakes;
 
 public final class SnakesProto {
   private SnakesProto() {}

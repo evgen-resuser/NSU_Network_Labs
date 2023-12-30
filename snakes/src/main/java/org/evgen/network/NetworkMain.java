@@ -40,7 +40,7 @@ public class NetworkMain implements MessageSender{
         byte[] data = msg.toByteArray();
         try {
             socket.send(new DatagramPacket(data, 0, data.length, address, port));
-            System.out.println("sent " + msg.getTypeCase() + " to " + address + ":" + port);
+            //System.out.println("sent " + msg.getTypeCase() + "-" + msg.getMsgSeq() + " to " + address + ":" + port);
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }

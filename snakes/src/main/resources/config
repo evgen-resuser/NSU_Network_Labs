@@ -2,6 +2,6 @@ height=10
 width=15
 food_static=3
 name=test
-delay=1000
+delay=500
 can_join=true
 player=evgen

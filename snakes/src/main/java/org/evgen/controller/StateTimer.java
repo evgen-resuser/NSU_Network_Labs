@@ -15,7 +15,7 @@ public class StateTimer implements Runnable{
             while (!Thread.currentThread().isInterrupted()) {
                 Thread.sleep(delay);
                 stateConstructor.releaseFreshState();
-                System.out.println("sent new state!!!");
+                //System.out.println("sent new state!!!");
             }
         } catch (InterruptedException e) {
             System.out.println(e.getMessage());

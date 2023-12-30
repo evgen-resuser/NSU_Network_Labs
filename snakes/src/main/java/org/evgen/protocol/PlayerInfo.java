@@ -53,4 +53,9 @@ public class PlayerInfo {
         }
         return null;
     }
+
+    @Override
+    public String toString() {
+        return id + ": " + name + " " + role;
+    }
 }

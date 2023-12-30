@@ -13,6 +13,7 @@ public class ControlPanel extends JPanel implements ControlsView {
 
     private JPanel buttons;
     private JPanel otherBoards;
+    private JPanel descr;
     private JCheckBox isViewer = new JCheckBox();
 
     private MainController masterController;
@@ -20,23 +21,25 @@ public class ControlPanel extends JPanel implements ControlsView {
     public ControlPanel(MainController controller) {
         this.masterController = controller;
 
-        this.setPreferredSize(new Dimension(400, 500));
+        this.setPreferredSize(new Dimension(400, 400));
 
         initButtonsPanel();
         initOtherBoardsPanel();
+        initDescription();
 
         this.add(buttons);
         this.add(otherBoards);
 
+
         isViewer.setText("Connect as viewer");
         this.add(isViewer);
 
-
-        JButton b = new JButton("kill me");
-        b.addActionListener( e -> {
-            controller.testDeath();
-        });
-        this.add(b);
+        this.add(descr);
+//        JButton b = new JButton("kill me");
+//        b.addActionListener( e -> {
+//            controller.testDeath();
+//        });
+//        this.add(b);
 
     }
 
@@ -58,6 +61,16 @@ public class ControlPanel extends JPanel implements ControlsView {
 
         buttons.add(start);
         buttons.add(quit);
+    }
+
+    private void initDescription() {
+        this.descr = new JPanel();
+        descr.setBorder(new LineBorder(Color.LIGHT_GRAY));
+        descr.setLayout(new BoxLayout(descr, BoxLayout.Y_AXIS));
+        descr.add(new JLabel("Role icons: "));
+        descr.add(new JLabel("★ - Master"));
+        descr.add(new JLabel("☆ - Deputy"));
+        descr.add(new JLabel("○ - Normal player"));
     }
 
     private JList<GameInfo> otherGames;

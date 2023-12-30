@@ -4,13 +4,12 @@ import me.ippolitov.fit.snakes.SnakesProto;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class BoardMainPanel extends JPanel {
 
-    private final int SCALE = 15;
+    private static final int SCALE = 15;
+    private static final String LOADING_MSG = "Waiting for a fresh state...";
     private final int w;
     private final int h;
 
@@ -47,7 +46,6 @@ public class BoardMainPanel extends JPanel {
         paintFoods(g);
     }
 
-    private static final String LOADING_MSG = "Waiting for fresh state...";
     private void paintLoadingScreen(Graphics g) {
         setBackground(Color.BLACK);
         g.setColor(Color.WHITE);
@@ -63,23 +61,9 @@ public class BoardMainPanel extends JPanel {
 
 
             g.setColor(colors.getColor(id % 10));
-            SnakesProto.GameState.Coord head = snake.getPoints(0);
+            //SnakesProto.GameState.Coord head = snake.getPoints(0);
+            //g.drawString(String.valueOf(snake.getPlayerId()), (head.getX() * SCALE + 5), (head.getY() * SCALE - 2));
 
-//            int x = head.getX();
-//            int y = head.getY();
-//            //System.out.println("head "+ x + " " + y);
-//            g.fillOval(x*SCALE, y*SCALE, SCALE, SCALE);
-//            for (int i = 1; i != snake.getPointsCount(); i++) {
-//                SnakesProto.GameState.Coord part = snake.getPoints(i);
-//                x += part.getX();
-//                if (x < 0) x += w;
-//                if (x >= w) x %= w;
-//                y += part.getY();
-//                if (y < 0) y += h;
-//                if (y >= h) y %= h;
-//                //System.out.println("part " + x + " " + y);
-//                g.fillOval(x*SCALE, y*SCALE, SCALE, SCALE);
-//            }
             int x = 0;
             int y = 0;
 

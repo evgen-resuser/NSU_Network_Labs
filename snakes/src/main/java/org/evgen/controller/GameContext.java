@@ -8,12 +8,7 @@ import org.evgen.protocol.PlayerInfo;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
 
 @Getter
 @Setter
@@ -113,6 +108,17 @@ public class GameContext {
         this.foodStatic = data.getFoodStatic();
         this.delay = data.getStateDelayMs();
 
+        PlayerInfo infop;
+        for(SnakesProto.GamePlayer player : info.getGameSpecs().getPlayers().getPlayersList()) {
+            if (!player.hasPort() && !player.hasIpAddress()) {
+                infop = new PlayerInfo(player.getName(), player.getId(), player.getRole() == SnakesProto.NodeRole.DEPUTY ? SnakesProto.NodeRole.MASTER : SnakesProto.NodeRole.NORMAL, player.getType(), player.getScore());
+            } else {
+                infop = new PlayerInfo(player.getName(), player.getId(), player.getIpAddress(), player.getPort(), player.getRole() == SnakesProto.NodeRole.DEPUTY ? SnakesProto.NodeRole.MASTER : SnakesProto.NodeRole.NORMAL, player.getType(), player.getScore());
+            }
+            playersMap.put(infop.getId(), infop);
+        }
+
+
     }
 
     public void getFromGameState(SnakesProto.GameState state) {
@@ -133,6 +139,10 @@ public class GameContext {
 
     public void changeRole(int id, SnakesProto.NodeRole role) {
         playersMap.get(id).setRole(role);
+    }
+
+    public void removePlayer(int id) {
+        this.playersMap.remove(id);
     }
 
 }

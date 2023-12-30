@@ -7,4 +7,5 @@ import java.net.DatagramPacket;
 public interface Controller {
     void deliverMessage(DatagramPacket message);
     void applySteerMsg(SnakesProto.Direction m);
+    void proceedDeath(int id);
 }
